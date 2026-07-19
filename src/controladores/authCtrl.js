@@ -13,25 +13,8 @@ export const login = async (req, res) => {
         }
 
         const usuario = rows[0];
-
-        // --------------------------------------------------------
-        // BYPASS DE DESARROLLO: Forzamos la validación para pruebas
-        // --------------------------------------------------------
-        let passwordValida = false;
+        const passwordValida = await bcrypt.compare(usu_password, usuario.usu_password);
         
-        try {
-            // Intenta validar con bcrypt primero
-            passwordValida = await bcrypt.compare(usu_password, usuario.usu_password);
-        } catch (error) {
-            console.log("Aviso: Fallo en la comparación de bcrypt");
-        }
-
-        // Si escribes '12345' en Ionic, te dejará entrar sin importar el hash de la BD
-        if (usu_password === '12345') {
-            passwordValida = true;
-        }
-        // --------------------------------------------------------
-
         if (!passwordValida) {
             return res.status(401).json({ message: 'Contraseña incorrecta' });
         }
@@ -53,7 +36,24 @@ export const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en login:", error);
         res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+export const register = async (req, res) => {
+    try {
+        const { usu_nombre, usu_password, usu_rol } = req.body;
+        
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(usu_password, salt);
+
+        await pool.query(
+            'INSERT INTO usuarios (usu_nombre, usu_password, usu_rol) VALUES (?, ?, ?)', 
+            [usu_nombre, hashedPassword, usu_rol]
+        );
+
+        res.status(201).json({ message: 'Usuario registrado correctamente con encriptación' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error al registrar usuario' });
     }
 };
