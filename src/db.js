@@ -1,10 +1,9 @@
-import {createPool} from 'mysql2/promise';
-import {DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE, DB_PORT} from './config.js';
+import { createPool } from 'mysql2/promise';
 
 export const pool = createPool({
-    host: DB_HOST,
-    database: DB_DATABASE,
-    user: DB_USER,
-    password: DB_PASSWORD,
-    port: DB_PORT
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 3306
 });
