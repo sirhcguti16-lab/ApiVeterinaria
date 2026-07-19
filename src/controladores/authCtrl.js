@@ -49,21 +49,7 @@ export const login = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor' });
     }
 };
-        res.json({
-            message: 'Login exitoso',
-            token,
-            usuario: {
-                id: usuario.usu_id,
-                nombre: usuario.usu_nombre,
-                rol: usuario.usu_rol
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
-};
-
+       
 export const register = async (req, res) => {
     try {
         const { usu_nombre, usu_password, usu_rol } = req.body;
