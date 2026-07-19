@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getProductos, agregarStock } from '../controladores/productosCtrl.js';
+import { getProductos, agregarStock } from '../controladores/prodCtrl.js';
 import { verificarToken, verificarRol } from '../middlewares/authMiddleware.js';
 
 const router = Router();
