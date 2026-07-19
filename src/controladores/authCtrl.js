@@ -37,7 +37,10 @@ export const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en login:", error);
-        res.status(500).json({ message: 'Error interno del servidor' });
-    }
+      console.error("Error en login:", error);
+      res.status(500).json({ 
+          message: 'Error interno del servidor', 
+          detalle_del_error: error.message 
+      });
+  }
 };
