@@ -14,7 +14,6 @@ export const verificarToken = (req, res, next) => {
         req.usuario = decoded;
         next(); 
     } catch (error) {
-        // Al estar dentro de la función, este return ya no será ilegal
         return res.status(401).json({ message: 'Token inválido o expirado' });
     }
 };
