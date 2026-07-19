@@ -2,7 +2,14 @@ import { pool } from '../db.js';
 
 export const getDuenos = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM duenos');
+        const [rows] = await pool.query(`
+            SELECT d.*, 
+                   COUNT(m.mas_id) as cantidad_mascotas,
+                   GROUP_CONCAT(m.mas_nombre SEPARATOR ', ') as nombres_mascotas
+            FROM duenos d 
+            LEFT JOIN mascotas m ON d.due_id = m.due_id
+            GROUP BY d.due_id
+        `);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ message: 'Error al obtener dueños' });
