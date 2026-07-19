@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getMedicamentos, actualizarStock, getRecetasPendientes } from '../controladores/farmacia.js';
+import { getMedicamentos, actualizarStock, getRecetasPendientes } from '../controladores/farmaciaCtrl.js';
 import { verificarToken, verificarRol } from '../middlewares/authMiddleware.js';
 
 const router = Router();
