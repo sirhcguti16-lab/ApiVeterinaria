@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCitasPendientes, atenderCita } from '../controladores/veterinario.js'; // Ojo al nombre de tu archivo
+import { getCitasPendientes, atenderCita } from '../controladores/veterinarioCtrl.js'; 
 import { verificarToken, verificarRol } from '../middlewares/authMiddleware.js';
 
 const router = Router();
