@@ -4,7 +4,6 @@ export const crearReceta = async (req, res) => {
     try {
         const { cit_id, medicamentos } = req.body;
 
-        // 1. Obtener datos del dueño y mascota desde la cita
         const [infoCita] = await pool.query(`
             SELECT d.due_cedula, d.due_nombre, d.due_telefono, m.mas_nombre 
             FROM citas c
@@ -18,9 +17,8 @@ export const crearReceta = async (req, res) => {
         }
         const datos = infoCita[0];
 
-        // 2. Cálculos financieros automáticos
         let subtotal = 0;
-        const porcentajeIva = 0.15; // 15% IVA
+        const porcentajeIva = 0.15; 
 
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
@@ -35,7 +33,6 @@ export const crearReceta = async (req, res) => {
         const iva = subtotal * porcentajeIva;
         const total = subtotal + iva;
 
-        // 3. Guardar el encabezado de la factura (Ajusta los nombres de las columnas si en tu BD se llaman distinto)
         const [resultReceta] = await pool.query(`
             INSERT INTO recetas 
             (cit_id, due_cedula, due_nombre, mas_nombre, rec_fecha, rec_subtotal, rec_descuento, rec_iva, rec_total, rec_estado) 
@@ -44,7 +41,6 @@ export const crearReceta = async (req, res) => {
         
         const rec_id = resultReceta.insertId;
 
-        // 4. Guardar detalles de la receta
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
                 const med = medicamentos[i];
@@ -58,7 +54,63 @@ export const crearReceta = async (req, res) => {
         res.status(201).json({ message: 'Factura generada con éxito' });
         
     } catch (error) {
-        console.error('Error SQL:', error);
+        res.status(500).json({ message: 'Error', detalle: error.message });
+    }
+};
+
+export const getRecetasPendientes = async (req, res) => {
+    try {
+        const [recetas] = await pool.query('SELECT * FROM recetas WHERE rec_estado = "pendiente" ORDER BY rec_fecha DESC');
+        
+        for (let rec of recetas) {
+            const [detalles] = await pool.query(`
+                SELECT rd.*, m.med_nombre, (rd.cantidad * m.med_precio) as total_linea
+                FROM receta_detalles rd 
+                JOIN medicamentos m ON rd.med_id = m.med_id 
+                WHERE rd.rec_id = ?
+            `, [rec.rec_id]);
+            rec.detalles = detalles;
+        }
+        
+        res.json(recetas);
+    } catch (error) {
+        res.status(500).json({ message: 'Error', detalle: error.message });
+    }
+};
+
+export const getRecetasDespachadas = async (req, res) => {
+    try {
+        const [recetas] = await pool.query('SELECT * FROM recetas WHERE rec_estado = "despachada" ORDER BY rec_fecha DESC');
+        
+        for (let rec of recetas) {
+            const [detalles] = await pool.query(`
+                SELECT rd.*, m.med_nombre, (rd.cantidad * m.med_precio) as total_linea
+                FROM receta_detalles rd 
+                JOIN medicamentos m ON rd.med_id = m.med_id 
+                WHERE rd.rec_id = ?
+            `, [rec.rec_id]);
+            rec.detalles = detalles;
+        }
+        
+        res.json(recetas);
+    } catch (error) {
+        res.status(500).json({ message: 'Error', detalle: error.message });
+    }
+};
+
+export const despacharReceta = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        await pool.query('UPDATE recetas SET rec_estado = "despachada" WHERE rec_id = ?', [id]);
+        
+        const [detalles] = await pool.query('SELECT med_id, cantidad FROM receta_detalles WHERE rec_id = ?', [id]);
+        for (let det of detalles) {
+            await pool.query('UPDATE medicamentos SET med_stock = med_stock - ? WHERE med_id = ?', [det.cantidad, det.med_id]);
+        }
+
+        res.json({ message: 'Receta despachada y stock actualizado' });
+    } catch (error) {
         res.status(500).json({ message: 'Error', detalle: error.message });
     }
 };
