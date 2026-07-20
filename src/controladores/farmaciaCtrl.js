@@ -16,7 +16,7 @@ export const actualizarStock = async (req, res) => {
         await pool.query('UPDATE medicamentos SET med_stock = med_stock + ? WHERE med_id = ?', [cantidad_agregar, id]);
         res.json({ message: 'Stock actualizado' });
     } catch (error) {
-        res.status(500).json({ message: 'Error al actualizar stock' });
+        res.status(500).json({ message: 'Error al actualizar stock', detalle: error.message });
     }
 };
 
@@ -30,7 +30,7 @@ export const editarMedicamento = async (req, res) => {
         );
         res.json({ message: 'Medicamento editado correctamente' });
     } catch (error) {
-        res.status(500).json({ message: 'Error al editar medicamento' });
+        res.status(500).json({ message: 'Error al editar medicamento', detalle: error.message });
     }
 };
 
@@ -47,17 +47,17 @@ export const getRecetasPendientes = async (req, res) => {
         
         for (let receta of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.cantidad, med.med_nombre, med.med_id, med.med_stock
+                SELECT rd.det_cantidad, med.med_nombre, med.med_id, med.med_stock
                 FROM receta_detalles rd
                 JOIN medicamentos med ON rd.med_id = med.med_id
                 WHERE rd.rec_id = ?
-            `, [receta.rec_id]);
+            `, [receta.rec_id]); // CORREGIDO: rd.det_cantidad
             receta.detalles = detalles;
         }
         
         res.json(recetas);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener recetas' });
+        res.status(500).json({ message: 'Error al obtener recetas', detalle: error.message });
     }
 };
 
@@ -75,17 +75,17 @@ export const getRecetasDespachadas = async (req, res) => {
         
         for (let receta of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.cantidad, med.med_nombre, med.med_id, (rd.cantidad * med.med_precio) as total_linea
+                SELECT rd.det_cantidad, med.med_nombre, med.med_id, (rd.det_cantidad * med.med_precio) as total_linea
                 FROM receta_detalles rd
                 JOIN medicamentos med ON rd.med_id = med.med_id
                 WHERE rd.rec_id = ?
-            `, [receta.rec_id]);
+            `, [receta.rec_id]); // CORREGIDO: rd.det_cantidad
             receta.detalles = detalles;
         }
         
         res.json(recetas);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener historial' });
+        res.status(500).json({ message: 'Error al obtener historial', detalle: error.message });
     }
 };
 
@@ -95,10 +95,12 @@ export const despacharReceta = async (req, res) => {
         const { id } = req.params;
         await connection.beginTransaction();
 
-        const [detalles] = await connection.query('SELECT med_id, cantidad FROM receta_detalles WHERE rec_id = ?', [id]);
+        // CORREGIDO: det_cantidad
+        const [detalles] = await connection.query('SELECT med_id, det_cantidad FROM receta_detalles WHERE rec_id = ?', [id]);
 
         for (let det of detalles) {
-            await connection.query('UPDATE medicamentos SET med_stock = med_stock - ? WHERE med_id = ?', [det.cantidad, det.med_id]);
+            // CORREGIDO: det.det_cantidad
+            await connection.query('UPDATE medicamentos SET med_stock = med_stock - ? WHERE med_id = ?', [det.det_cantidad, det.med_id]);
         }
 
         await connection.query('UPDATE recetas SET rec_estado = "despachada" WHERE rec_id = ?', [id]);
@@ -107,7 +109,7 @@ export const despacharReceta = async (req, res) => {
         res.json({ message: 'Receta despachada' });
     } catch (error) {
         await connection.rollback();
-        res.status(500).json({ message: 'Error al despachar receta' });
+        res.status(500).json({ message: 'Error al despachar receta', detalle: error.message });
     } finally {
         connection.release();
     }
