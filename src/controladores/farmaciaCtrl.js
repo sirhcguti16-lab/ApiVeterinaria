@@ -2,10 +2,10 @@ import { pool } from '../db.js';
 
 export const getMedicamentos = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM medicamentos');
-        res.json(rows);
+        const [medicamentos] = await pool.query('SELECT * FROM medicamentos');
+        res.json(medicamentos);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener medicamentos' });
+        res.status(500).json({ message: 'Error al obtener inventario', detalle: error.message });
     }
 };
 
