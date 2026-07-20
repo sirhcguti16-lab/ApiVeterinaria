@@ -61,6 +61,34 @@ export const getRecetasPendientes = async (req, res) => {
     }
 };
 
+export const getRecetasDespachadas = async (req, res) => {
+    try {
+        const [recetas] = await pool.query(`
+            SELECT r.*, c.cit_fecha_hora, m.mas_nombre, d.due_nombre, d.due_cedula
+            FROM recetas r
+            JOIN citas c ON r.cit_id = c.cit_id
+            JOIN mascotas m ON c.mas_id = m.mas_id
+            JOIN duenos d ON m.due_id = d.due_id
+            WHERE r.rec_estado = 'despachada'
+            ORDER BY r.rec_fecha DESC
+        `);
+        
+        for (let receta of recetas) {
+            const [detalles] = await pool.query(`
+                SELECT rd.cantidad, med.med_nombre, med.med_id, (rd.cantidad * med.med_precio) as total_linea
+                FROM recetas_detalle rd
+                JOIN medicamentos med ON rd.med_id = med.med_id
+                WHERE rd.rec_id = ?
+            `, [receta.rec_id]);
+            receta.detalles = detalles;
+        }
+        
+        res.json(recetas);
+    } catch (error) {
+        res.status(500).json({ message: 'Error al obtener historial' });
+    }
+};
+
 export const despacharReceta = async (req, res) => {
     const connection = await pool.getConnection();
     try {
