@@ -5,11 +5,11 @@ export const crearReceta = async (req, res) => {
         const { cit_id, medicamentos } = req.body;
 
         const [resultReceta] = await pool.query(
-            'INSERT INTO recetas (cit_id) VALUES (?)',
+            'INSERT INTO recetas (cit_id, rec_fecha, rec_estado) VALUES (?, NOW(), "pendiente")',
             [cit_id]
         );
         
-        const rec_id = resultReceta.insertId; 
+        const rec_id = resultReceta.insertId;
 
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
@@ -22,8 +22,12 @@ export const crearReceta = async (req, res) => {
         }
 
         res.status(201).json({ message: 'Receta enviada a farmacia con éxito' });
+        
     } catch (error) {
         console.error('Error SQL al crear la receta:', error);
-        res.status(500).json({ message: 'Error al generar la receta' });
+        res.status(500).json({ 
+            message: 'Error al generar la receta', 
+            detalle: error.message 
+        });
     }
 };
