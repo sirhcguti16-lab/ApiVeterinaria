@@ -67,7 +67,7 @@ export const getCitas = async (req, res) => {
         `);
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ message: 'Error al obtener citas' });
+        res.status(500).json({ message: 'Error al obtener citas', detalle: error.message });
     }
 };
 
