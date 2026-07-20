@@ -7,7 +7,6 @@ export const getCitasPendientes = async (req, res) => {
             FROM citas c 
             JOIN mascotas m ON c.mas_id = m.mas_id 
             JOIN duenos d ON m.due_id = d.due_id
-            WHERE c.cit_estado = 'pendiente'
             ORDER BY c.cit_fecha_hora ASC
         `);
         res.json(rows);
