@@ -20,12 +20,16 @@ export const crearReceta = async (req, res) => {
         let subtotal = 0;
         const porcentajeIva = 0.15; 
 
+        // 1. Calculamos el total y GUARDAMOS el precio unitario que nos da la base de datos
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
                 const med = medicamentos[i];
                 const [rows] = await pool.query('SELECT med_precio FROM medicamentos WHERE med_id = ?', [med.med_id]);
                 if (rows.length > 0) {
+                    med.precio_unitario = rows[0].med_precio; // Guardamos el precio exacto de la DB
                     subtotal += rows[0].med_precio * med.cantidad;
+                } else {
+                    med.precio_unitario = 0;
                 }
             }
         }
@@ -41,12 +45,19 @@ export const crearReceta = async (req, res) => {
         
         const rec_id = resultReceta.insertId;
 
+        // 2. Insertamos los detalles con TODOS los campos que pide tu tabla
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
                 const med = medicamentos[i];
+                
+                const precio_unitario = med.precio_unitario;
+                const precio_total = precio_unitario * med.cantidad;
+                // Si el veterinario envía la dosis desde Ionic la usamos, sino ponemos un texto por defecto
+                const dosis = med.dosis || 'Indicaciones dadas en consulta'; 
+
                 await pool.query(
-                    'INSERT INTO receta_detalles (rec_id, med_id, cantidad) VALUES (?, ?, ?)',
-                    [rec_id, med.med_id, med.cantidad]
+                    'INSERT INTO receta_detalles (rec_id, med_id, det_dosis, det_cantidad, det_precio_unitario, det_precio_total) VALUES (?, ?, ?, ?, ?, ?)',
+                    [rec_id, med.med_id, dosis, med.cantidad, precio_unitario, precio_total] 
                 );
             }
         }
@@ -64,11 +75,11 @@ export const getRecetasPendientes = async (req, res) => {
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.*, m.med_nombre, (rd.cantidad * m.med_precio) as total_linea
+                SELECT rd.*, m.med_nombre, rd.det_precio_total as total_linea
                 FROM receta_detalles rd 
                 JOIN medicamentos m ON rd.med_id = m.med_id 
                 WHERE rd.rec_id = ?
-            `, [rec.rec_id]);
+            `, [rec.rec_id]); 
             rec.detalles = detalles;
         }
         
@@ -84,11 +95,11 @@ export const getRecetasDespachadas = async (req, res) => {
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.*, m.med_nombre, (rd.cantidad * m.med_precio) as total_linea
+                SELECT rd.*, m.med_nombre, rd.det_precio_total as total_linea
                 FROM receta_detalles rd 
                 JOIN medicamentos m ON rd.med_id = m.med_id 
                 WHERE rd.rec_id = ?
-            `, [rec.rec_id]);
+            `, [rec.rec_id]); 
             rec.detalles = detalles;
         }
         
@@ -104,9 +115,9 @@ export const despacharReceta = async (req, res) => {
         
         await pool.query('UPDATE recetas SET rec_estado = "despachada" WHERE rec_id = ?', [id]);
         
-        const [detalles] = await pool.query('SELECT med_id, cantidad FROM receta_detalles WHERE rec_id = ?', [id]);
+        const [detalles] = await pool.query('SELECT med_id, det_cantidad FROM receta_detalles WHERE rec_id = ?', [id]);
         for (let det of detalles) {
-            await pool.query('UPDATE medicamentos SET med_stock = med_stock - ? WHERE med_id = ?', [det.cantidad, det.med_id]);
+            await pool.query('UPDATE medicamentos SET med_stock = med_stock - ? WHERE med_id = ?', [det.det_cantidad, det.med_id]);
         }
 
         res.json({ message: 'Receta despachada y stock actualizado' });
