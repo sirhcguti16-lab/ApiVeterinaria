@@ -38,13 +38,13 @@ router.put('/veterinario/citas/:id', verificarRol(['veterinario']), atenderCita)
 router.post('/recetas', verificarRol(['veterinario']), crearReceta);
 
 // --- FARMACIA ---
-router.get('/farmacia/recetas/pendientes', verificarRol(['farmacia', 'veterinario']), getRecetasPendientes);
-router.get('/farmacia/recetas/despachadas', verificarRol(['farmacia', 'veterinario']), getRecetasDespachadas);
+// 1. Rutas de Medicamentos (Faltaba la ruta GET)
+router.get('/farmacia/medicamentos', verificarRol(['farmacia', 'veterinario']), getMedicamentos);
 router.put('/farmacia/medicamentos/:id', verificarRol(['farmacia']), editarMedicamento);
 router.put('/farmacia/medicamentos/stock/:id', verificarRol(['farmacia']), actualizarStock);
 
-router.get('/farmacia/recetas/pendientes', verificarRol(['farmacia']), getRecetasPendientes);
-router.get('/farmacia/recetas/despachadas', verificarRol(['farmacia']), getRecetasDespachadas);
+// 2. Rutas de Recetas (Eliminados los duplicados)
+router.get('/farmacia/recetas/pendientes', verificarRol(['farmacia', 'veterinario']), getRecetasPendientes);
+router.get('/farmacia/recetas/despachadas', verificarRol(['farmacia', 'veterinario']), getRecetasDespachadas);
 router.put('/farmacia/recetas/despachar/:id', verificarRol(['farmacia']), despacharReceta);
-
 export default router;
