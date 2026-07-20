@@ -10,7 +10,7 @@ import { getCitasPendientes, atenderCita } from '../controladores/veterinarioCtr
 
 import { 
     getMedicamentos, actualizarStock, editarMedicamento, 
-    getRecetasPendientes, despacharReceta 
+    getRecetasPendientes, despacharReceta, getRecetasDespachadas 
 } from '../controladores/farmaciaCtrl.js';
 
 import { crearReceta } from '../controladores/recetasCtrl.js';
@@ -42,7 +42,8 @@ router.get('/farmacia/medicamentos', verificarRol(['farmacia', 'veterinario']), 
 router.put('/farmacia/medicamentos/:id', verificarRol(['farmacia']), editarMedicamento);
 router.put('/farmacia/medicamentos/stock/:id', verificarRol(['farmacia']), actualizarStock);
 
-router.get('/farmacia/recetas', verificarRol(['farmacia']), getRecetasPendientes);
+router.get('/farmacia/recetas/pendientes', verificarRol(['farmacia']), getRecetasPendientes);
+router.get('/farmacia/recetas/despachadas', verificarRol(['farmacia']), getRecetasDespachadas);
 router.put('/farmacia/recetas/despachar/:id', verificarRol(['farmacia']), despacharReceta);
 
 export default router;
