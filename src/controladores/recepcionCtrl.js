@@ -23,26 +23,39 @@ export const registrarDueno = async (req, res) => {
             mas_nombre, mas_especie, mas_raza, mas_peso 
         } = req.body;
 
-        const [resultDueno] = await pool.query(
-            'INSERT INTO duenos (due_cedula, due_nombre, due_telefono, due_correo) VALUES (?, ?, ?, ?)',
-            [due_cedula, due_nombre, due_telefono, due_correo]
-        );
+        // 1. Buscamos si la cédula ya existe en la base
+        const [existingDuenos] = await pool.query('SELECT due_id FROM duenos WHERE due_cedula = ?', [due_cedula]);
+        let due_id;
 
-        const due_id = resultDueno.insertId;
+        if (existingDuenos.length > 0) {
+            // Si el dueño existe, capturamos su ID y actualizamos sus datos por si cambió de teléfono o correo
+            due_id = existingDuenos[0].due_id;
+            await pool.query(
+                'UPDATE duenos SET due_nombre = ?, due_telefono = ?, due_correo = ? WHERE due_id = ?',
+                [due_nombre, due_telefono, due_correo, due_id]
+            );
+        } else {
+            // Si no existe, creamos un dueño completamente nuevo
+            const [resultDueno] = await pool.query(
+                'INSERT INTO duenos (due_cedula, due_nombre, due_telefono, due_correo) VALUES (?, ?, ?, ?)',
+                [due_cedula, due_nombre, due_telefono, due_correo]
+            );
+            due_id = resultDueno.insertId;
+        }
 
-        if (mas_nombre) {
+        // 2. Insertar la mascota SOLO si el usuario escribió un nombre de mascota en el formulario
+        if (mas_nombre && mas_nombre.trim() !== '') {
             await pool.query(
                 'INSERT INTO mascotas (due_id, mas_nombre, mas_especie, mas_raza, mas_peso) VALUES (?, ?, ?, ?, ?)',
                 [due_id, mas_nombre, mas_especie, mas_raza, mas_peso]
             );
         }
 
-        res.status(201).json({ message: 'Dueño y mascota registrados con éxito' });
+        res.status(201).json({ message: 'Proceso completado con éxito' });
     } catch (error) {
-        res.status(500).json({ message: 'Error al registrar' });
+        res.status(500).json({ message: 'Error al registrar o actualizar' });
     }
 };
-
 export const getCitas = async (req, res) => {
     try {
         const [rows] = await pool.query(`
