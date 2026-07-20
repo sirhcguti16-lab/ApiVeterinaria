@@ -38,7 +38,8 @@ router.put('/veterinario/citas/:id', verificarRol(['veterinario']), atenderCita)
 router.post('/recetas', verificarRol(['veterinario']), crearReceta);
 
 // --- FARMACIA ---
-router.get('/farmacia/medicamentos', verificarRol(['farmacia', 'veterinario']), getMedicamentos);
+router.get('/farmacia/recetas/pendientes', verificarRol(['farmacia', 'veterinario']), getRecetasPendientes);
+router.get('/farmacia/recetas/despachadas', verificarRol(['farmacia', 'veterinario']), getRecetasDespachadas);
 router.put('/farmacia/medicamentos/:id', verificarRol(['farmacia']), editarMedicamento);
 router.put('/farmacia/medicamentos/stock/:id', verificarRol(['farmacia']), actualizarStock);
 
