@@ -82,7 +82,7 @@ export const getRecetasPendientes = async (req, res) => {
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.*, m.med_nombre, rd.det_precio_total as total_linea
+                SELECT rd.det_cantidad, rd.det_dosis, rd.det_precio_unitario, rd.det_precio_total, m.med_nombre, rd.det_precio_total as total_linea
                 FROM receta_detalles rd 
                 JOIN medicamentos m ON rd.med_id = m.med_id 
                 WHERE rd.rec_id = ?
@@ -108,7 +108,7 @@ export const getRecetasDespachadas = async (req, res) => {
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
-                SELECT rd.*, m.med_nombre, rd.det_precio_total as total_linea
+                SELECT rd.det_cantidad, rd.det_dosis, rd.det_precio_unitario, rd.det_precio_total, m.med_nombre, rd.det_precio_total as total_linea
                 FROM receta_detalles rd 
                 JOIN medicamentos m ON rd.med_id = m.med_id 
                 WHERE rd.rec_id = ?
