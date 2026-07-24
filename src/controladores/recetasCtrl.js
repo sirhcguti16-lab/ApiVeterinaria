@@ -2,7 +2,7 @@ import { pool } from '../db.js';
 
 export const crearReceta = async (req, res) => {
     try {
-        const { cit_id, medicamentos } = req.body;
+        const { cit_id, medicamentos, diagnostico } = req.body;
 
         const [infoCita] = await pool.query(`
             SELECT d.due_cedula, d.due_nombre, d.due_telefono, m.mas_nombre 
@@ -17,16 +17,19 @@ export const crearReceta = async (req, res) => {
         }
         const datos = infoCita[0];
 
+        if (diagnostico) {
+            await pool.query('UPDATE citas SET cit_diagnostico = ?, cit_estado = "atendida" WHERE cit_id = ?', [diagnostico, cit_id]);
+        }
+
         let subtotal = 0;
         const porcentajeIva = 0.15; 
 
-        // 1. Calculamos el total y GUARDAMOS el precio unitario que nos da la base de datos
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
                 const med = medicamentos[i];
                 const [rows] = await pool.query('SELECT med_precio FROM medicamentos WHERE med_id = ?', [med.med_id]);
                 if (rows.length > 0) {
-                    med.precio_unitario = rows[0].med_precio; // Guardamos el precio exacto de la DB
+                    med.precio_unitario = rows[0].med_precio;
                     subtotal += rows[0].med_precio * med.cantidad;
                 } else {
                     med.precio_unitario = 0;
@@ -45,14 +48,12 @@ export const crearReceta = async (req, res) => {
         
         const rec_id = resultReceta.insertId;
 
-        // 2. Insertamos los detalles con TODOS los campos que pide tu tabla
         if (medicamentos && medicamentos.length > 0) {
             for (let i = 0; i < medicamentos.length; i++) {
                 const med = medicamentos[i];
                 
                 const precio_unitario = med.precio_unitario;
                 const precio_total = precio_unitario * med.cantidad;
-                // Si el veterinario envía la dosis desde Ionic la usamos, sino ponemos un texto por defecto
                 const dosis = med.dosis || 'Indicaciones dadas en consulta'; 
 
                 await pool.query(
@@ -62,7 +63,7 @@ export const crearReceta = async (req, res) => {
             }
         }
 
-        res.status(201).json({ message: 'Factura generada con éxito' });
+        res.status(201).json({ message: 'Receta generada con éxito' });
         
     } catch (error) {
         res.status(500).json({ message: 'Error', detalle: error.message });
@@ -71,7 +72,13 @@ export const crearReceta = async (req, res) => {
 
 export const getRecetasPendientes = async (req, res) => {
     try {
-        const [recetas] = await pool.query('SELECT * FROM recetas WHERE rec_estado = "pendiente" ORDER BY rec_fecha DESC');
+        const [recetas] = await pool.query(`
+            SELECT r.*, c.cit_diagnostico 
+            FROM recetas r
+            JOIN citas c ON r.cit_id = c.cit_id
+            WHERE r.rec_estado = "pendiente" 
+            ORDER BY r.rec_fecha DESC
+        `);
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
@@ -91,7 +98,13 @@ export const getRecetasPendientes = async (req, res) => {
 
 export const getRecetasDespachadas = async (req, res) => {
     try {
-        const [recetas] = await pool.query('SELECT * FROM recetas WHERE rec_estado = "despachada" ORDER BY rec_fecha DESC');
+        const [recetas] = await pool.query(`
+            SELECT r.*, c.cit_diagnostico 
+            FROM recetas r
+            JOIN citas c ON r.cit_id = c.cit_id
+            WHERE r.rec_estado = "despachada" 
+            ORDER BY r.rec_fecha DESC
+        `);
         
         for (let rec of recetas) {
             const [detalles] = await pool.query(`
